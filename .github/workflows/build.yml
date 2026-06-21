@@ -45,7 +45,7 @@ jobs:
             libdbus-1-dev \
             libglib2.0-dev \
             libcairo2-dev \
-            libgirepository1.0-dev \
+            libgirepository-2.0-dev \
             gir1.2-appindicator3-0.1 \
             pkg-config
 
