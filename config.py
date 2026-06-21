@@ -7,7 +7,7 @@ def get_config_dir() -> Path:
     if sys.platform == 'win32':
         base = Path(os.environ.get('APPDATA', Path.home()))
     else:
-        base = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
+        base = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local' / 'share'))
     config_dir = base / 'MusicPresence'
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir
