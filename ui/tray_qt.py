@@ -7,9 +7,10 @@ from PyQt6.QtGui import QIcon, QPixmap, QColor
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 
 from ui.settings import SettingsWindow
+from version import __version__
 
-BASE_DIR  = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ICONS_DIR = BASE_DIR / 'playersIcons'
+BASE_DIR   = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ICONS_DIR  = BASE_DIR / 'playersIcons'
 ASSETS_DIR = BASE_DIR / 'assets'
 
 
@@ -30,21 +31,20 @@ def _make_status_icon(color: str, fg_pixmap: QPixmap = None) -> QIcon:
 
 
 class _Bridge(QObject):
-    status_changed = pyqtSignal(str)   # 'playing', 'idle', 'error'
-    track_changed  = pyqtSignal(str, str)  # artist, title
+    status_changed = pyqtSignal(str)
+    track_changed  = pyqtSignal(str, str)
+    update_available = pyqtSignal(str, str)  # version, download_url
 
 
 class TrayApp:
     def __init__(self, loop_fn):
-        """
-        loop_fn : coroutine async def main_loop(bridge) à exécuter dans un thread.
-        """
         self._app = QApplication.instance() or QApplication(sys.argv)
         self._bridge = _Bridge()
         self._loop_fn = loop_fn
-        self._current_track = ('', '')
+        self._settings_win = None
+        self._update_action = None
+        self._pending_update = None  # (version, url)
 
-        # Chargement du foreground (notes + badges, fond transparent)
         fg_path = ASSETS_DIR / 'icon_fg.png'
         fg_px = QPixmap(str(fg_path)) if fg_path.exists() else None
 
@@ -52,33 +52,38 @@ class TrayApp:
         if app_icon_path.exists():
             self._app.setWindowIcon(QIcon(str(app_icon_path)))
 
-        self._icon_default = _make_status_icon('#5865F2', fg_px)  # violet Discord
-        self._icon_playing = _make_status_icon('#57F287', fg_px)  # vert
-        self._icon_idle    = _make_status_icon('#FEE75C', fg_px)  # jaune
-        self._icon_error   = _make_status_icon('#ED4245', fg_px)  # rouge
+        self._icon_default = _make_status_icon('#5865F2', fg_px)
+        self._icon_playing = _make_status_icon('#57F287', fg_px)
+        self._icon_idle    = _make_status_icon('#FEE75C', fg_px)
+        self._icon_error   = _make_status_icon('#ED4245', fg_px)
+        self._icon_update  = _make_status_icon('#EB459E', fg_px)  # rose = update dispo
 
         self._tray = QSystemTrayIcon(self._icon_default)
-        self._tray.setToolTip('MusicLocal Discord Presence')
+        self._tray.setToolTip(f'MusicLocal Discord Presence v{__version__}')
 
-        menu = QMenu()
-        self._status_action = menu.addAction('En attente...')
+        self._menu = QMenu()
+        self._status_action = self._menu.addAction('En attente...')
         self._status_action.setEnabled(False)
-        menu.addSeparator()
-        menu.addAction('Paramètres', self._open_settings)
-        menu.addSeparator()
-        menu.addAction('Quitter', self._quit)
+        self._menu.addSeparator()
+        self._menu.addAction('Paramètres', self._open_settings)
+        self._menu.addSeparator()
+        self._menu.addAction('Quitter', self._quit)
 
-        self._tray.setContextMenu(menu)
+        self._tray.setContextMenu(self._menu)
         self._tray.activated.connect(self._on_tray_click)
+        self._tray.messageClicked.connect(self._on_notification_click)
 
         self._bridge.status_changed.connect(self._on_status)
         self._bridge.track_changed.connect(self._on_track)
+        self._bridge.update_available.connect(self._on_update_available)
 
     def _on_tray_click(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self._open_settings()
 
     def _on_status(self, status: str):
+        if self._pending_update:
+            return  # garde l'icône rose tant qu'une update est dispo
         icons = {
             'playing': self._icon_playing,
             'idle':    self._icon_idle,
@@ -87,14 +92,60 @@ class TrayApp:
         self._tray.setIcon(icons.get(status, self._icon_default))
 
     def _on_track(self, artist: str, title: str):
-        self._current_track = (artist, title)
         label = f'♪ {artist} — {title}' if title else 'En attente...'
         self._status_action.setText(label[:60])
-        self._tray.setToolTip(f'MusicLocal\n{label}')
+        self._tray.setToolTip(f'MusicLocal v{__version__}\n{label}')
+
+    def _on_update_available(self, version: str, url: str):
+        self._pending_update = (version, url)
+        self._tray.setIcon(self._icon_update)
+
+        # Entrée dans le menu
+        if self._update_action is None:
+            self._menu.insertSeparator(self._menu.actions()[2])
+            self._update_action = self._menu.insertSection(
+                self._menu.actions()[2], f'🔄 Mettre à jour vers v{version}'
+            )
+            update_item = QMenu.addAction(self._menu, f'Installer v{version}', self._install_update)
+            self._menu.insertAction(self._menu.actions()[2], update_item)
+
+        # Notification bulle
+        self._tray.showMessage(
+            'Mise à jour disponible',
+            f'MusicLocal v{version} est disponible — cliquez pour installer.',
+            QSystemTrayIcon.MessageIcon.Information,
+            8000,
+        )
+
+    def _on_notification_click(self):
+        if self._pending_update:
+            self._install_update()
+
+    def _install_update(self):
+        if not self._pending_update:
+            return
+        _, url = self._pending_update
+        self._tray.showMessage(
+            'Mise à jour',
+            'Téléchargement en cours...',
+            QSystemTrayIcon.MessageIcon.Information,
+            3000,
+        )
+        from updater import download_and_install
+        download_and_install(
+            url,
+            on_error=lambda e: self._tray.showMessage(
+                'Erreur', f'Mise à jour échouée : {e}',
+                QSystemTrayIcon.MessageIcon.Critical, 5000
+            ),
+        )
 
     def _open_settings(self):
-        win = SettingsWindow()
-        win.exec()
+        if self._settings_win is None:
+            self._settings_win = SettingsWindow()
+        self._settings_win.show()
+        self._settings_win.raise_()
+        self._settings_win.activateWindow()
 
     def _quit(self):
         self._tray.hide()
@@ -104,11 +155,18 @@ class TrayApp:
         self._app.setQuitOnLastWindowClosed(False)
         self._tray.show()
 
-        def _thread():
+        def _loop_thread():
             import asyncio
             asyncio.run(self._loop_fn(self._bridge))
 
-        t = threading.Thread(target=_thread, daemon=True)
-        t.start()
+        def _update_thread():
+            from updater import check_for_update
+            result = check_for_update()
+            if result:
+                version, url = result
+                self._bridge.update_available.emit(version, url)
+
+        threading.Thread(target=_loop_thread, daemon=True).start()
+        threading.Thread(target=_update_thread, daemon=True).start()
 
         sys.exit(self._app.exec())

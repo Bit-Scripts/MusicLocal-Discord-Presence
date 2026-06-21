@@ -5,4 +5,5 @@ minio
 Pillow
 winsdk
 PyQt6
+packaging
 pyinstaller

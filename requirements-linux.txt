@@ -7,4 +7,5 @@ dbus-python
 pympris
 PyQt6
 pygobject
+packaging
 pyinstaller

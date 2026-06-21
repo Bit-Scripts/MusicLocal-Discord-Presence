@@ -13,6 +13,10 @@ hiddenimports_common = [
     'backends.smtc',
     'backends.mpris',
     'config',
+    'version',
+    'updater',
+    'packaging',
+    'packaging.version',
 ]
 
 hiddenimports_windows = [
