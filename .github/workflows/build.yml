@@ -94,8 +94,8 @@ jobs:
 
           # Structure AppDir
           mkdir -p AppDir/usr/bin
-          cp dist/MusicPresence AppDir/usr/bin/MusicPresence
-          chmod +x AppDir/usr/bin/MusicPresence
+          cp -r dist/MusicPresence AppDir/usr/bin/MusicPresence
+          chmod +x AppDir/usr/bin/MusicPresence/MusicPresence
 
           # Icône
           cp assets/icon.png AppDir/MusicPresence.png
@@ -104,22 +104,25 @@ jobs:
           cp installer/MusicPresence.desktop AppDir/MusicPresence.desktop
 
           # AppRun
-          cat > AppDir/AppRun << 'EOF'
+          cat > AppDir/AppRun << 'APPRUN'
           #!/bin/bash
           SELF=$(readlink -f "$0")
           HERE="${SELF%/*}"
-          exec "$HERE/usr/bin/MusicPresence" "$@"
-          EOF
+          exec "$HERE/usr/bin/MusicPresence/MusicPresence" "$@"
+          APPRUN
           chmod +x AppDir/AppRun
 
           # Build AppImage
           ARCH=x86_64 ./appimagetool AppDir MusicPresence-$APP_VERSION-x86_64.AppImage
 
+      - name: Tar portable
+        run: tar -czf dist/MusicPresence-linux.tar.gz -C dist MusicPresence
+
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: MusicPresence-linux-binary
-          path: dist/MusicPresence
+          path: dist/MusicPresence-linux.tar.gz
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
@@ -155,11 +158,11 @@ jobs:
             | Fichier | Description |
             |---|---|
             | `MusicPresence-*-x86_64.AppImage` | AppImage universel |
-            | `MusicPresence` | Binaire portable |
+            | `MusicPresence-linux.tar.gz` | Archive portable |
 
             > Placez votre fichier `.env` dans le même dossier que l'exécutable.
           files: |
             artifacts/MusicPresence-windows-setup/MusicPresence-Setup-*.exe
             artifacts/MusicPresence-windows-portable/MusicPresence-portable.zip
             artifacts/MusicPresence-linux-appimage/MusicPresence-*.AppImage
-            artifacts/MusicPresence-linux-binary/MusicPresence
+            artifacts/MusicPresence-linux-binary/MusicPresence-linux.tar.gz
