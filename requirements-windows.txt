@@ -6,4 +6,5 @@ Pillow
 winsdk
 PyQt6
 packaging
+winotify
 pyinstaller

@@ -1,7 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 import sys
+from PyInstaller.utils.hooks import collect_all
 
 block_cipher = None
+
+winsdk_datas, winsdk_binaries, winsdk_hiddenimports = ([], [], [])
+if sys.platform == 'win32':
+    winsdk_datas, winsdk_binaries, winsdk_hiddenimports = collect_all('winsdk')
 
 hiddenimports_common = [
     'pypresence',
@@ -16,6 +21,8 @@ hiddenimports_common = [
     'version',
     'updater',
     'ui.update_dialog',
+    'ui.notify',
+    'winotify',
     'packaging',
     'packaging.version',
 ]
@@ -38,12 +45,12 @@ hiddenimports = hiddenimports_common + (
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
+    binaries=winsdk_binaries,
     datas=[
         ('playersIcons', 'playersIcons'),
         ('assets', 'assets'),
-    ],
-    hiddenimports=hiddenimports,
+    ] + winsdk_datas,
+    hiddenimports=hiddenimports + winsdk_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

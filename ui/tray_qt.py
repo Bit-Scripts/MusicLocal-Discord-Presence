@@ -7,6 +7,7 @@ from PyQt6.QtGui import QIcon, QPixmap, QColor
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 
 from ui.settings import SettingsWindow
+from ui.notify import notify
 from version import __version__
 
 BASE_DIR   = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -110,12 +111,11 @@ class TrayApp:
             self._menu.insertAction(self._menu.actions()[2], install_item)
             self._update_action = install_item
 
-        # Notification bulle
-        self._tray.showMessage(
+        icon_path = str(ASSETS_DIR / 'icon.png')
+        notify(
             'Mise à jour disponible',
-            f'MusicLocal v{version} est disponible — cliquez pour installer.',
-            QSystemTrayIcon.MessageIcon.Information,
-            8000,
+            f'MusicLocal v{version} est disponible. Cliquez pour installer.',
+            icon_path=icon_path,
         )
 
     def _on_notification_click(self):
