@@ -37,7 +37,7 @@ def check_for_update() -> tuple[str, str] | None:
     return None
 
 
-def download_and_install(download_url: str, on_progress=None, on_done=None, on_error=None):
+def download_and_install(download_url: str, new_version: str = '', on_progress=None, on_done=None, on_error=None):
     """Télécharge et installe la mise à jour dans un thread séparé."""
     def _run():
         try:
@@ -53,7 +53,7 @@ def download_and_install(download_url: str, on_progress=None, on_done=None, on_e
                     on_progress(int(downloaded / total * 100))
             tmp.close()
 
-            _replace_and_restart(tmp.name)
+            _replace_and_restart(tmp.name, new_version)
             if on_done:
                 on_done()
         except Exception as e:
@@ -64,27 +64,25 @@ def download_and_install(download_url: str, on_progress=None, on_done=None, on_e
     threading.Thread(target=_run, daemon=True).start()
 
 
-def _replace_and_restart(new_exe_path: str):
+def _replace_and_restart(new_exe_path: str, new_version: str):
+    from version import __version__ as old_version
     current = sys.executable if getattr(sys, 'frozen', False) else None
 
     if sys.platform == 'win32' and current:
-        # Batch script : attend que le process se termine, remplace, relance
         bat = tempfile.NamedTemporaryFile(delete=False, suffix='.bat', mode='w')
-        bat.write(f'@echo off\n')
-        bat.write(f'timeout /t 2 /nobreak >nul\n')
+        bat.write('@echo off\n')
+        bat.write('timeout /t 2 /nobreak >nul\n')
         bat.write(f'move /y "{new_exe_path}" "{current}"\n')
-        bat.write(f'start "" "{current}"\n')
-        bat.write(f'del "%~f0"\n')
+        bat.write(f'start "" "{current}" --updated-from {old_version}\n')
+        bat.write('del "%~f0"\n')
         bat.close()
         os.startfile(bat.name)
         sys.exit(0)
 
     elif sys.platform != 'win32' and current:
-        # Linux : remplacement direct
         os.chmod(new_exe_path, 0o755)
         os.replace(new_exe_path, current)
-        os.execv(current, sys.argv)
+        os.execv(current, sys.argv + [f'--updated-from={old_version}'])
 
     else:
-        # Mode développement : on ne remplace pas
         print(f"Mode dev — nouveau binaire téléchargé dans : {new_exe_path}")

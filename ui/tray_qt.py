@@ -132,8 +132,10 @@ class TrayApp:
             3000,
         )
         from updater import download_and_install
+        version, url = self._pending_update
         download_and_install(
             url,
+            new_version=version,
             on_error=lambda e: self._tray.showMessage(
                 'Erreur', f'Mise à jour échouée : {e}',
                 QSystemTrayIcon.MessageIcon.Critical, 5000
@@ -168,5 +170,17 @@ class TrayApp:
 
         threading.Thread(target=_loop_thread, daemon=True).start()
         threading.Thread(target=_update_thread, daemon=True).start()
+
+        # Notification si on vient d'une mise à jour
+        for arg in sys.argv[1:]:
+            if arg.startswith('--updated-from=') or arg.startswith('--updated-from'):
+                old = arg.split('=')[-1] if '=' in arg else sys.argv[sys.argv.index(arg) + 1]
+                self._tray.showMessage(
+                    'Mise à jour effectuée',
+                    f'MusicLocal mis à jour v{old} → v{__version__} ✓',
+                    QSystemTrayIcon.MessageIcon.Information,
+                    6000,
+                )
+                break
 
         sys.exit(self._app.exec())
