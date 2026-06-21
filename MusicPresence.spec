@@ -35,6 +35,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('playersIcons', 'playersIcons'),
+        ('assets', 'assets'),
     ],
     hiddenimports=hiddenimports,
     hookspath=[],
@@ -63,6 +64,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
+    icon='assets/icon.ico',
     console=False,
     disable_windowed_traceback=False,
     target_arch=None,

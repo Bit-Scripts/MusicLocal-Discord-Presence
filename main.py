@@ -25,7 +25,7 @@ BUCKET_NAME = os.getenv('MINIO_BUCKET', 'coversimage')
 CACHE_PATH = os.path.join(script_dir, 'image_cache.json')
 
 ICON_NAMES = {
-    # Windows (SMTC source_app_user_model_id)
+    # Windows
     'Spotify': 'spotify',
     'Chrome': 'chrome',
     'Microsoft Edge': 'edge',
@@ -34,7 +34,7 @@ ICON_NAMES = {
     'foobar2000': 'foobar2000',
     'MusicBee': 'musicbee',
     'wacup.exe': 'wacup',
-    # Linux (MPRIS Identity)
+    # Linux
     'Clementine': 'clementine',
     'Media Player Classic Qute Theater': 'mpc-qt',
     'mpv': 'mpv',
@@ -48,7 +48,6 @@ ICON_NAMES = {
     'default': 'default_icon',
 }
 
-# Import du backend selon la plateforme
 if sys.platform == 'win32':
     from backends.smtc import get_track_info
 else:
@@ -158,15 +157,34 @@ async def clear_discord():
 
 # ---------- Boucle principale ----------
 
-async def main_loop():
-    await RPC.connect()
+async def main_loop(bridge=None):
+    def emit_status(s):
+        if bridge:
+            try:
+                bridge.status_changed.emit(s)
+            except Exception:
+                pass
+
+    def emit_track(artist, title):
+        if bridge:
+            try:
+                bridge.track_changed.emit(artist, title)
+            except Exception:
+                pass
+
+    try:
+        await RPC.connect()
+    except Exception as e:
+        print(f"Erreur connexion Discord: {e}")
+        emit_status('error')
+
     print(f"MusicLocal Discord Presence démarré ({sys.platform}).")
     last_log = None
-    last_track = None       # (title, artist, source_app)
-    last_update_time = 0    # timestamp de la dernière mise à jour Discord
-    last_position_s = 0     # position envoyée à Discord
-    SYNC_INTERVAL = 15      # secondes entre mises à jour forcées (limite Discord)
-    SEEK_TOLERANCE = 3      # secondes de dérive avant resync
+    last_track = None
+    last_update_time = 0
+    last_position_s = 0
+    SYNC_INTERVAL = 15
+    SEEK_TOLERANCE = 3
 
     while True:
         info = await get_track_info()
@@ -177,6 +195,8 @@ async def main_loop():
                 last_log = None
                 last_track = None
                 last_update_time = 0
+                emit_status('idle')
+                emit_track('', '')
             else:
                 print("Aucune session multimédia active.")
         else:
@@ -184,7 +204,6 @@ async def main_loop():
             current_track = (title, artist, source_app)
             now = time.time()
 
-            # Dérive attendue = temps écoulé depuis la dernière mise à jour
             expected_position = last_position_s + (now - last_update_time)
             position_drift = abs(position_s - expected_position)
 
@@ -193,18 +212,13 @@ async def main_loop():
             seeked = last_track is not None and position_drift > SEEK_TOLERANCE
 
             if track_changed or needs_sync or seeked:
-                if track_changed:
-                    image_url = None
-                    if image_bytes:
-                        image_url = upload_cover(image_bytes)
-                else:
-                    # Réutilise l'image déjà uploadée depuis le cache
-                    image_url = upload_cover(image_bytes) if image_bytes else None
-
+                image_url = upload_cover(image_bytes) if image_bytes else None
                 await update_discord(title, artist, position_s, duration_s, image_url, source_app)
                 last_update_time = now
                 last_position_s = position_s
                 last_track = current_track
+                emit_status('playing')
+                emit_track(artist, title)
 
                 log = f"[{source_app}] {artist} — {title}"
                 if log != last_log:
@@ -214,5 +228,25 @@ async def main_loop():
         await asyncio.sleep(5)
 
 
+# ---------- Entrée ----------
+
+def _get_tray():
+    if sys.platform == 'win32':
+        from ui.tray_qt import TrayApp
+        return TrayApp(main_loop)
+
+    desktop = os.getenv('XDG_CURRENT_DESKTOP', '').lower()
+    if 'gnome' in desktop or 'unity' in desktop:
+        try:
+            from ui.tray_gtk import TrayApp
+            return TrayApp(main_loop)
+        except Exception:
+            pass
+
+    from ui.tray_qt import TrayApp
+    return TrayApp(main_loop)
+
+
 if __name__ == '__main__':
-    asyncio.run(main_loop())
+    tray = _get_tray()
+    tray.run()
