@@ -183,23 +183,27 @@ async def main_loop(bridge=None):
     last_track = None
     last_update_time = 0
     last_position_s = 0
+    none_count = 0
     SYNC_INTERVAL = 15
     SEEK_TOLERANCE = 3
+    NONE_GRACE = 3  # nombre de polls None consécutifs avant d'effacer
 
     while True:
         info = await get_track_info()
 
         if info is None:
-            if last_log is not None:
+            none_count += 1
+            if last_log is not None and none_count >= NONE_GRACE:
                 await clear_discord()
                 last_log = None
                 last_track = None
                 last_update_time = 0
                 emit_status('idle')
                 emit_track('', '')
-            else:
+            elif last_log is None:
                 print("Aucune session multimédia active.")
         else:
+            none_count = 0
             title, artist, image_bytes, source_app, position_s, duration_s = info
             current_track = (title, artist, source_app)
             now = time.time()
@@ -225,7 +229,7 @@ async def main_loop(bridge=None):
                     print(log)
                     last_log = log
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)
 
 
 # ---------- Entrée ----------
