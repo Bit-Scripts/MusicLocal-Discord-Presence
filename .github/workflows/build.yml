@@ -22,11 +22,24 @@ jobs:
       - name: Build exe
         run: pyinstaller MusicPresence.spec --distpath dist --workpath build
 
-      - name: Upload artifact
+      - name: Build installer (Inno Setup)
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+        run: |
+          mkdir installer\installer_output
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MusicPresence.iss
+
+      - name: Upload portable exe
         uses: actions/upload-artifact@v4
         with:
-          name: MusicPresence-windows
+          name: MusicPresence-windows-portable
           path: dist/MusicPresence.exe
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicPresence-windows-setup
+          path: installer/installer_output/MusicPresence-Setup-*.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -47,7 +60,9 @@ jobs:
             libcairo2-dev \
             libgirepository-2.0-dev \
             gir1.2-appindicator3-0.1 \
-            pkg-config
+            pkg-config \
+            fuse \
+            libfuse2
 
       - name: Install dependencies
         run: pip install -r requirements-linux.txt
@@ -55,11 +70,48 @@ jobs:
       - name: Build binary
         run: pyinstaller MusicPresence.spec --distpath dist --workpath build
 
-      - name: Upload artifact
+      - name: Build AppImage
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+        run: |
+          # Téléchargement appimagetool
+          wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool
+          chmod +x appimagetool
+
+          # Structure AppDir
+          mkdir -p AppDir/usr/bin
+          cp dist/MusicPresence AppDir/usr/bin/MusicPresence
+          chmod +x AppDir/usr/bin/MusicPresence
+
+          # Icône
+          cp assets/icon.png AppDir/MusicPresence.png
+
+          # .desktop
+          cp installer/MusicPresence.desktop AppDir/MusicPresence.desktop
+
+          # AppRun
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          SELF=$(readlink -f "$0")
+          HERE="${SELF%/*}"
+          exec "$HERE/usr/bin/MusicPresence" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+          # Build AppImage
+          ARCH=x86_64 ./appimagetool AppDir MusicPresence-$APP_VERSION-x86_64.AppImage
+
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: MusicPresence-linux
+          name: MusicPresence-linux-binary
           path: dist/MusicPresence
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicPresence-linux-appimage
+          path: MusicPresence-*.AppImage
 
   release:
     needs: [build-windows, build-linux]
@@ -67,17 +119,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download Windows artifact
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: MusicPresence-windows
-          path: artifacts/windows
-
-      - name: Download Linux artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: MusicPresence-linux
-          path: artifacts/linux
+          path: artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -87,10 +132,20 @@ jobs:
             ## Installation
 
             ### Windows
-            Télécharge `MusicPresence.exe`, place ton `.env` dans le même dossier et lance l'exe.
+            | Fichier | Description |
+            |---|---|
+            | `MusicPresence-Setup-*.exe` | Installeur (recommandé) |
+            | `MusicPresence.exe` | Portable, sans installation |
 
             ### Linux
-            Télécharge `MusicPresence`, rends-le exécutable (`chmod +x MusicPresence`), place ton `.env` dans le même dossier et lance-le.
+            | Fichier | Description |
+            |---|---|
+            | `MusicPresence-*-x86_64.AppImage` | AppImage universel |
+            | `MusicPresence` | Binaire portable |
+
+            > Placez votre fichier `.env` dans le même dossier que l'exécutable.
           files: |
-            artifacts/windows/MusicPresence.exe
-            artifacts/linux/MusicPresence
+            artifacts/MusicPresence-windows-setup/MusicPresence-Setup-*.exe
+            artifacts/MusicPresence-windows-portable/MusicPresence.exe
+            artifacts/MusicPresence-linux-appimage/MusicPresence-*.AppImage
+            artifacts/MusicPresence-linux-binary/MusicPresence

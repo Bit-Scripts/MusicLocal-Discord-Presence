@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=MusicLocal Discord Presence
+Exec=MusicPresence
+Icon=MusicPresence
+Type=Application
+Categories=AudioVideo;Music;
+Comment=Show what you're listening to on Discord
+StartupNotify=false
