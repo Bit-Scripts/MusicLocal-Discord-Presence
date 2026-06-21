@@ -1,0 +1,8 @@
+pypresence
+python-dotenv
+requests
+minio
+Pillow
+dbus-python
+pympris
+pyinstaller

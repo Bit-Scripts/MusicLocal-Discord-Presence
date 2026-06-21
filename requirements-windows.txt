@@ -1,0 +1,7 @@
+pypresence
+python-dotenv
+requests
+minio
+Pillow
+winsdk
+pyinstaller

@@ -1,0 +1,90 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements-windows.txt
+
+      - name: Build exe
+        run: pyinstaller MusicPresence.spec --distpath dist --workpath build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicPresence-windows
+          path: dist/MusicPresence.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev libglib2.0-dev pkg-config
+
+      - name: Install dependencies
+        run: pip install -r requirements-linux.txt
+
+      - name: Build binary
+        run: pyinstaller MusicPresence.spec --distpath dist --workpath build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicPresence-linux
+          path: dist/MusicPresence
+
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: MusicPresence-windows
+          path: artifacts/windows
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: MusicPresence-linux
+          path: artifacts/linux
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MusicLocal Discord Presence ${{ github.ref_name }}
+          body: |
+            ## Installation
+
+            ### Windows
+            Télécharge `MusicPresence.exe`, place ton `.env` dans le même dossier et lance l'exe.
+
+            ### Linux
+            Télécharge `MusicPresence`, rends-le exécutable (`chmod +x MusicPresence`), place ton `.env` dans le même dossier et lance-le.
+          files: |
+            artifacts/windows/MusicPresence.exe
+            artifacts/linux/MusicPresence

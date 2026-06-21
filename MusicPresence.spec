@@ -3,6 +3,32 @@ import sys
 
 block_cipher = None
 
+hiddenimports_common = [
+    'pypresence',
+    'pypresence.exceptions',
+    'minio',
+    'minio.error',
+    'PIL',
+    'PIL.Image',
+    'backends.smtc',
+    'backends.mpris',
+]
+
+hiddenimports_windows = [
+    'winsdk.windows.media.control',
+    'winsdk.windows.storage.streams',
+    'winsdk.windows.foundation',
+]
+
+hiddenimports_linux = [
+    'dbus',
+    'pympris',
+]
+
+hiddenimports = hiddenimports_common + (
+    hiddenimports_windows if sys.platform == 'win32' else hiddenimports_linux
+)
+
 a = Analysis(
     ['main.py'],
     pathex=[],
@@ -10,32 +36,11 @@ a = Analysis(
     datas=[
         ('playersIcons', 'playersIcons'),
     ],
-    hiddenimports=[
-        # winsdk — chargement dynamique non détecté par PyInstaller
-        'winsdk.windows.media.control',
-        'winsdk.windows.storage.streams',
-        'winsdk.windows.foundation',
-        # pypresence
-        'pypresence',
-        'pypresence.exceptions',
-        # minio
-        'minio',
-        'minio.error',
-        # Pillow
-        'PIL',
-        'PIL.Image',
-        # backends
-        'backends.smtc',
-        'backends.mpris',
-    ],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
-        # Exclure les dépendances Linux sur Windows et vice versa
-        'dbus' if sys.platform == 'win32' else 'winsdk',
-        'pympris' if sys.platform == 'win32' else '',
-    ],
+    excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -58,10 +63,9 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,          # Pas de fenêtre CMD
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon='playersIcons/default_icon.png',  # décommenter si tu as une icône .ico
 )
