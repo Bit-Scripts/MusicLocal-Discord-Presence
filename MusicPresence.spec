@@ -12,6 +12,7 @@ hiddenimports_common = [
     'PIL.Image',
     'backends.smtc',
     'backends.mpris',
+    'config',
 ]
 
 hiddenimports_windows = [

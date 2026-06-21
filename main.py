@@ -14,15 +14,15 @@ from PIL import Image
 from pypresence import AioPresence
 import pypresence
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(script_dir, '.env'))
+from config import ENV_PATH, CACHE_PATH
+
+load_dotenv(ENV_PATH)
 
 MINIO_URL = os.getenv('MINIO_URL')
 MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
 MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY')
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
 BUCKET_NAME = os.getenv('MINIO_BUCKET', 'coversimage')
-CACHE_PATH = os.path.join(script_dir, 'image_cache.json')
 
 ICON_NAMES = {
     # Windows

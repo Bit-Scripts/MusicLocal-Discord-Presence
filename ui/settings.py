@@ -6,8 +6,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from dotenv import dotenv_values, set_key
-
-ENV_PATH = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) / '.env'
+from config import ENV_PATH
 
 FIELDS = [
     ('DISCORD_CLIENT_ID', 'Discord Client ID',  '1169241743561080883', False),
