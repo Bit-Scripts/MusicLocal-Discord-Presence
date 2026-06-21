@@ -111,11 +111,12 @@ class TrayApp:
             self._menu.insertAction(self._menu.actions()[2], install_item)
             self._update_action = install_item
 
-        icon_path = str(ASSETS_DIR / 'icon.png')
-        notify(
+        # Qt balloon tip : messageClicked ouvre le dialog directement
+        self._tray.showMessage(
             'Mise à jour disponible',
-            f'MusicLocal v{version} est disponible. Cliquez pour installer.',
-            icon_path=icon_path,
+            f'MusicLocal v{version} est disponible — cliquez pour installer.',
+            QSystemTrayIcon.MessageIcon.Information,
+            8000,
         )
 
     def _on_notification_click(self):
