@@ -1,0 +1,8 @@
+.env
+image_cache.json
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+MPRIS-Discord-Presence/
