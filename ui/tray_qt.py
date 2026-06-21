@@ -102,12 +102,13 @@ class TrayApp:
 
         # Entrée dans le menu
         if self._update_action is None:
-            self._menu.insertSeparator(self._menu.actions()[2])
-            self._update_action = self._menu.insertSection(
-                self._menu.actions()[2], f'🔄 Mettre à jour vers v{version}'
+            update_item = self._menu.insertSection(
+                self._menu.actions()[2], f'Mise à jour v{version} disponible'
             )
-            update_item = QMenu.addAction(self._menu, f'Installer v{version}', self._install_update)
-            self._menu.insertAction(self._menu.actions()[2], update_item)
+            install_item = self._menu.addAction(f'Installer v{version}')
+            install_item.triggered.connect(self._open_update_dialog)
+            self._menu.insertAction(self._menu.actions()[2], install_item)
+            self._update_action = install_item
 
         # Notification bulle
         self._tray.showMessage(
@@ -119,28 +120,15 @@ class TrayApp:
 
     def _on_notification_click(self):
         if self._pending_update:
-            self._install_update()
+            self._open_update_dialog()
 
-    def _install_update(self):
+    def _open_update_dialog(self):
         if not self._pending_update:
             return
-        _, url = self._pending_update
-        self._tray.showMessage(
-            'Mise à jour',
-            'Téléchargement en cours...',
-            QSystemTrayIcon.MessageIcon.Information,
-            3000,
-        )
-        from updater import download_and_install
+        from ui.update_dialog import UpdateDialog
         version, url = self._pending_update
-        download_and_install(
-            url,
-            new_version=version,
-            on_error=lambda e: self._tray.showMessage(
-                'Erreur', f'Mise à jour échouée : {e}',
-                QSystemTrayIcon.MessageIcon.Critical, 5000
-            ),
-        )
+        dlg = UpdateDialog(version, url)
+        dlg.exec()
 
     def _open_settings(self):
         if self._settings_win is None:
@@ -170,17 +158,5 @@ class TrayApp:
 
         threading.Thread(target=_loop_thread, daemon=True).start()
         threading.Thread(target=_update_thread, daemon=True).start()
-
-        # Notification si on vient d'une mise à jour
-        for arg in sys.argv[1:]:
-            if arg.startswith('--updated-from=') or arg.startswith('--updated-from'):
-                old = arg.split('=')[-1] if '=' in arg else sys.argv[sys.argv.index(arg) + 1]
-                self._tray.showMessage(
-                    'Mise à jour effectuée',
-                    f'MusicLocal mis à jour v{old} → v{__version__} ✓',
-                    QSystemTrayIcon.MessageIcon.Information,
-                    6000,
-                )
-                break
 
         sys.exit(self._app.exec())

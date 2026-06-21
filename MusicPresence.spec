@@ -15,6 +15,7 @@ hiddenimports_common = [
     'config',
     'version',
     'updater',
+    'ui.update_dialog',
     'packaging',
     'packaging.version',
 ]
