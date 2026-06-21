@@ -34,11 +34,14 @@ jobs:
           mkdir installer\installer_output
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MusicPresence.iss
 
-      - name: Upload portable exe
+      - name: Zip portable
+        run: Compress-Archive -Path dist\MusicPresence\* -DestinationPath dist\MusicPresence-portable.zip
+
+      - name: Upload portable
         uses: actions/upload-artifact@v4
         with:
           name: MusicPresence-windows-portable
-          path: dist/MusicPresence.exe
+          path: dist/MusicPresence-portable.zip
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
@@ -157,6 +160,6 @@ jobs:
             > Placez votre fichier `.env` dans le même dossier que l'exécutable.
           files: |
             artifacts/MusicPresence-windows-setup/MusicPresence-Setup-*.exe
-            artifacts/MusicPresence-windows-portable/MusicPresence.exe
+            artifacts/MusicPresence-windows-portable/MusicPresence-portable.zip
             artifacts/MusicPresence-linux-appimage/MusicPresence-*.AppImage
             artifacts/MusicPresence-linux-binary/MusicPresence

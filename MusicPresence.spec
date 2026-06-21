@@ -22,7 +22,6 @@ hiddenimports_common = [
     'updater',
     'ui.update_dialog',
     'ui.notify',
-    'winotify',
     'packaging',
     'packaging.version',
 ]
@@ -31,7 +30,8 @@ hiddenimports_windows = [
     'winsdk.windows.media.control',
     'winsdk.windows.storage.streams',
     'winsdk.windows.foundation',
-]
+    'winotify',
+] + winsdk_hiddenimports
 
 hiddenimports_linux = [
     'dbus',
@@ -50,7 +50,7 @@ a = Analysis(
         ('playersIcons', 'playersIcons'),
         ('assets', 'assets'),
     ] + winsdk_datas,
-    hiddenimports=hiddenimports + winsdk_hiddenimports,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -66,21 +66,24 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='MusicPresence',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    icon='assets/icon.ico',
     console=False,
-    disable_windowed_traceback=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
+    icon='assets/icon.ico',
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='MusicPresence',
 )
