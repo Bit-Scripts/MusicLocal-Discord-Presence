@@ -12,15 +12,14 @@ Affichez ce que vous écoutez sur Discord — avec les pochettes stockées sur v
 - Support VLC via son interface HTTP intégrée
 - Pochettes uploadées sur MinIO/S3 avec cache par déduplication SHA-256
 - Discord Rich Presence avec titre, artiste, pochette et barre de progression
-- Icône en zone de notification (Qt sous Windows/Linux, GTK sous GNOME) avec indicateur de statut
-- Fenêtre de paramètres — pas besoin d'éditer `.env` à la main
-- Exécutable en fichier unique pour Windows et Linux via PyInstaller
+- Icône en zone de notification avec indicateur de statut (Qt sous Windows/Linux, GTK sous GNOME)
+- **Fenêtre de paramètres** — tout se configure via l'interface, aucun fichier de config à éditer
+- Mise à jour automatique : notification quand une nouvelle version est disponible, un clic pour télécharger et installer
 
 ---
 
 ## Prérequis
 
-- Python 3.11+
 - Une application Discord ([portail développeur](https://discord.com/developers/applications))
 - Une instance MinIO ou compatible S3 avec un bucket public
 - (Optionnel) VLC avec l'interface HTTP activée
@@ -29,9 +28,7 @@ Affichez ce que vous écoutez sur Discord — avec les pochettes stockées sur v
 
 ## Installation
 
-### Depuis une release
-
-Téléchargez le dernier binaire depuis la page [Releases](https://github.com/Bit-Scripts/MusicLocal-Discord-Presence/releases), placez votre fichier `.env` à côté et lancez-le.
+Téléchargez le dernier installeur depuis la page [Releases](https://github.com/Bit-Scripts/MusicLocal-Discord-Presence/releases) et lancez-le. L'application apparaît dans la zone de notification. Faites un clic droit sur l'icône → **Paramètres** pour configurer.
 
 ### Depuis les sources
 
@@ -45,8 +42,6 @@ pip install -r requirements-windows.txt
 # Linux
 pip install -r requirements-linux.txt
 
-cp .env-example .env
-# Remplissez .env ou utilisez la fenêtre de paramètres après le lancement
 python main.py
 ```
 
@@ -54,18 +49,31 @@ python main.py
 
 ## Configuration
 
-Copiez `.env-example` vers `.env` et renseignez vos valeurs, ou ouvrez la fenêtre de paramètres depuis la zone de notification après le lancement.
+Tous les réglages se font dans la **fenêtre Paramètres**, accessible via un clic droit sur l'icône de la zone de notification.
 
-| Variable | Description | Défaut |
+![Fenêtre Paramètres](assets/settings.png)
+
+| Champ | Description | Où le trouver |
 |---|---|---|
-| `DISCORD_CLIENT_ID` | Client ID de votre application Discord | — |
-| `MINIO_URL` | Hôte MinIO (sans `https://`) | — |
-| `MINIO_ACCESS_KEY` | Clé d'accès MinIO | — |
-| `MINIO_SECRET_KEY` | Clé secrète MinIO | — |
-| `MINIO_BUCKET` | Nom du bucket pour les pochettes | `coversimage` |
-| `VLC_HOST` | Hôte de l'interface HTTP VLC | `localhost` |
-| `VLC_PORT` | Port de l'interface HTTP VLC | `8080` |
-| `VLC_PASSWORD` | Mot de passe de l'interface HTTP VLC | — |
+| **Discord Client ID** | L'identifiant client de votre application Discord | [discord.com/developers/applications](https://discord.com/developers/applications) → votre app → OAuth2 → Client ID |
+| **MinIO URL** | Adresse de votre serveur MinIO (sans `https://`) | Panneau d'administration MinIO/TrueNAS, ex. `minio.example.com` |
+| **MinIO Access Key** | Clé d'accès MinIO | Console MinIO → Access Keys |
+| **MinIO Secret Key** | Clé secrète MinIO | Console MinIO → Access Keys (affichée une seule fois à la création) |
+| **MinIO Bucket** | Nom du bucket pour stocker les pochettes | Créez un bucket public dans la console MinIO, ex. `coversimage` |
+| **VLC Hôte** | Hôte de l'interface HTTP VLC | Laissez `localhost` si VLC est sur la même machine |
+| **VLC Port** | Port de l'interface HTTP VLC | Par défaut `8080` |
+| **VLC Mot de passe** | Mot de passe de l'interface HTTP VLC | VLC → Outils → Préférences → Interface → Mot de passe Lua HTTP |
+
+Les paramètres sont sauvegardés automatiquement dans `%APPDATA%\MusicPresence\` (Windows) ou `~/.config/MusicPresence/` (Linux).
+
+---
+
+## Configuration de l'application Discord
+
+1. Aller sur [discord.com/developers/applications](https://discord.com/developers/applications)
+2. Créer une nouvelle application
+3. Copier le **Client ID** et le coller dans la fenêtre Paramètres
+4. Aller dans **Rich Presence → Art Assets** et uploader les icônes des lecteurs avec ces noms : `chrome`, `spotify`, `vlc`, `wacup`, `default_icon`
 
 ---
 
@@ -75,16 +83,7 @@ Copiez `.env-example` vers `.env` et renseignez vos valeurs, ou ouvrez la fenêt
 2. Interface → Interfaces principales → cocher **Web**
 3. Interface → Interfaces principales → Lua → définir un **mot de passe Lua HTTP**
 4. Redémarrer VLC
-5. Renseigner `VLC_PASSWORD` dans votre `.env`
-
----
-
-## Configuration de l'application Discord
-
-1. Aller sur [discord.com/developers/applications](https://discord.com/developers/applications)
-2. Créer une nouvelle application
-3. Copier le **Client ID** → renseigner `DISCORD_CLIENT_ID` dans `.env`
-4. Aller dans **Rich Presence → Art Assets** et uploader les icônes des lecteurs (`chrome`, `spotify`, `vlc`, `wacup`, `default_icon`, etc.)
+5. Saisir le mot de passe dans la fenêtre Paramètres sous **VLC Mot de passe**
 
 ---
 
