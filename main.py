@@ -24,6 +24,10 @@ MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY')
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
 BUCKET_NAME = os.getenv('MINIO_BUCKET', 'coversimage')
 
+IGNORED_SOURCES = {
+    'Chrome._crx_fdfllangmnopcnemepphpfaihc',  # PWA non-musicale (gestionnaire)
+}
+
 ICON_NAMES = {
     # Windows
     'Spotify': 'spotify',
@@ -208,6 +212,9 @@ async def main_loop(bridge=None):
         else:
             none_count = 0
             title, artist, image_bytes, source_app, position_s, duration_s = info
+            if source_app in IGNORED_SOURCES:
+                await asyncio.sleep(POLL_INTERVAL)
+                continue
             current_track = (title, artist, source_app)
             now = time.time()
 
