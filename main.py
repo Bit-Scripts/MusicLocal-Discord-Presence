@@ -213,7 +213,7 @@ async def main_loop(bridge=None):
             none_count = 0
             title, artist, image_bytes, source_app, position_s, duration_s = info
             if source_app in IGNORED_SOURCES:
-                await asyncio.sleep(POLL_INTERVAL)
+                await asyncio.sleep(2)
                 continue
             current_track = (title, artist, source_app)
             now = time.time()
