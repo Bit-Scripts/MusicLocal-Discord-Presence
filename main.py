@@ -28,6 +28,8 @@ ICON_NAMES = {
     # Windows
     'Spotify': 'spotify',
     'Chrome': 'chrome',
+    'YouTube Music': 'youtube_music',
+    'music.youtube.com': 'youtube_music',
     'Microsoft Edge': 'edge',
     'Firefox': 'firefox',
     'VLC media player': 'vlc',
