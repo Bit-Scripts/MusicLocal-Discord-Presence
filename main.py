@@ -30,6 +30,7 @@ ICON_NAMES = {
     'Chrome': 'chrome',
     'YouTube Music': 'youtube_music',
     'music.youtube.com': 'youtube_music',
+    'Chrome._crx_fdfllangmnopcnemepphpfaihc': 'youtube_music',
     'Microsoft Edge': 'edge',
     'Firefox': 'firefox',
     'VLC media player': 'vlc',
